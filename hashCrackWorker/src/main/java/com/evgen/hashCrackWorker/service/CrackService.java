@@ -7,7 +7,6 @@ import jakarta.annotation.PreDestroy;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
-import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.*;
 
@@ -19,50 +18,53 @@ public class CrackService {
     private final ConcurrentHashMap<String, StatusRequestDto> threadStatuses = new ConcurrentHashMap<>();
 
     public void startNewTask(String id, WorkerTask request) {
-
         Task task = Task.fromManagerRequest(request);
-
-        StatusRequestDto requestDto = new StatusRequestDto(WorkStatus.IN_PROGRESS, new HashSet<>());
-        threadStatuses.put(id, requestDto);
+        threadStatuses.put(id, new StatusRequestDto(WorkStatus.IN_PROGRESS, ConcurrentHashMap.newKeySet()));
 
         HashCrackCallable work = new HashCrackCallable(task);
         Future<Set<String>> future = executor.submit(work);
 
-        CompletableFuture.runAsync(() -> {
+        CompletableFuture.supplyAsync(() -> {
             try {
-                Set<String> results = future.get();
-                StatusRequestDto updatedStatus = threadStatuses.get(id);
-                updatedStatus.setStatus(WorkStatus.READY);
-                updatedStatus.setData(results);
-                log.info("Task ({}) result: {}", id, results);
+                return future.get();
             } catch (InterruptedException | ExecutionException e) {
-                StatusRequestDto updatedStatus = threadStatuses.get(id);
-                updatedStatus.setStatus(WorkStatus.ERROR);
                 log.error("Task ({}) failed: {}", id, e.getMessage());
+                return null;
             }
-        }, executor);
+        }, executor).thenAccept(results -> {
+            threadStatuses.computeIfPresent(id, (key, status) -> {
+                if (results != null) {
+                    status.setStatus(WorkStatus.READY);
+                    status.setData(results);
+                    log.info("Task ({}) result: {}", id, results);
+                } else {
+                    status.setStatus(WorkStatus.ERROR);
+                }
+                return status;
+            });
+        });
+
 
         log.info("Task started: {}", request);
 
     }
 
     public StatusRequestDto getStatus(String id) {
-        if (!threadStatuses.containsKey(id)) return new StatusRequestDto(WorkStatus.NOT_FOUND, null);
-        StatusRequestDto status = threadStatuses.get(id);
-        log.info("Sending Task ({}) status: {}", id, status);
-        return new StatusRequestDto(status.getStatus(), status.getData());
+        return threadStatuses.getOrDefault(id, new StatusRequestDto(WorkStatus.NOT_FOUND, null));
     }
 
     @PreDestroy
     private void shutdown() {
+        log.info("Shutting down executor...");
+        executor.shutdown();
         try {
-            executor.shutdown();
             if (!executor.awaitTermination(10, TimeUnit.SECONDS)) {
+                log.warn("Forcing executor shutdown...");
                 executor.shutdownNow();
             }
         } catch (InterruptedException e) {
+            log.error("Shutdown interrupted", e);
             executor.shutdownNow();
         }
     }
-
 }
