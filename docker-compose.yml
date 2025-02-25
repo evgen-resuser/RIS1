@@ -1,0 +1,26 @@
+version: '1'
+
+services:
+  manager: 
+    build: 
+      context: ./hashCrackManager
+    environment : 
+      WORKERS_AMOUNT: 2
+      WORKERS_URL: localhost:8081,localhost:8082
+    ports:
+      - "8080:8080"
+    networks:
+      - network
+
+
+  worker1: 
+    build:
+      context: ./hashCrackWorker
+    networks:
+      - network
+
+networks: 
+  network:
+    driver: bridge
+
+
