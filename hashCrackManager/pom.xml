@@ -10,7 +10,7 @@
 	</parent>
 	<groupId>com.evgen</groupId>
 	<artifactId>hashCrackManager</artifactId>
-	<version>0.0.1-SNAPSHOT</version>
+	<version>0.0.1</version>
 	<name>hashCrackManager</name>
 	<description>Hash Crack app </description>
 	<url/>

@@ -32,7 +32,7 @@ public class TaskService {
 
 
     public RequestIdDto createTask(ManagerNewTaskDto taskDto) {
-        UUID uuid = UUID.fromString("00000000-0000-0000-0000-000000000000"); //todo make random
+        UUID uuid = UUID.randomUUID();
         Task task = Task.fromRequest(taskDto);
 
         tasks.put(uuid, task);

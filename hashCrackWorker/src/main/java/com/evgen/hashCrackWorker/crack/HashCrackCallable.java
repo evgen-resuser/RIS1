@@ -35,8 +35,9 @@ public class HashCrackCallable implements Callable<Set<String>> {
         System.out.println(Arrays.toString(endIndex));
 
         for (int i = 0; i < maxLength; i++) {
+            System.out.println("checking: " + i);
             Generator.permutation(alphabet)
-                    .withRepetitions(i)
+                    .withRepetitions(i+1)
                     .stream()
                     .skip(startIndex[i])
                     .limit(endIndex[i])
