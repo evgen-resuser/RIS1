@@ -4,7 +4,6 @@ import com.evgen.hashCrackWorker.service.Task;
 import lombok.extern.slf4j.Slf4j;
 import org.paukov.combinatorics3.Generator;
 
-import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -31,11 +30,7 @@ public class HashCrackCallable implements Callable<Set<String>> {
     @Override
     public Set<String> call() {
         Set<String> results = new HashSet<>();
-        System.out.println(Arrays.toString(startIndex));
-        System.out.println(Arrays.toString(endIndex));
-
         for (int i = 0; i < maxLength; i++) {
-            System.out.println("checking: " + i);
             Generator.permutation(alphabet)
                     .withRepetitions(i+1)
                     .stream()
